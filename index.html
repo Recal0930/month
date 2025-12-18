@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电影网站专属入口</title>
+    <title>开启观影之旅（30天版）</title>
     <style>
         * {
             margin: 0;
@@ -12,43 +12,56 @@
             font-family: 'Arial', sans-serif;
         }
         body {
-            background-color: #1a1a1a;
+            /* 已替换为你的背景图URL */
+            background: url('https://s41.ax1x.com/2025/12/19/pZ1d8DU.jpg') center/cover no-repeat fixed;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             padding: 20px;
-            overflow: hidden; /* 隐藏页面滚动条 */
+            overflow: hidden;
         }
-        /* 验证页面容器 */
         .verify-container {
-            background-color: #2d2d2d;
+            background-color: rgba(45, 45, 45, 0.95);
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
             text-align: center;
             width: 100%;
             max-width: 400px;
+            border: 2px solid #00aaff;
+            position: relative;
+            z-index: 10;
         }
-        h1 {
-            color: #ffffff;
-            margin-bottom: 30px;
-            font-size: 24px;
+        .movie-container {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            position: relative;
+            z-index: 20;
         }
-        .card-input {
+        #movieIframe {
             width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 2px solid #444;
-            border-radius: 8px;
-            background-color: #3d3d3d;
-            color: #ffffff;
-            font-size: 16px;
-            outline: none;
+            height: 100%;
+            border: none;
         }
-        .card-input:focus {
-            border-color: #00aaff;
+        .title-suffix {
+            color: #00aaff;
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .main-title {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 36px;
+            text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
+        }
+        .expire-tip {
+            color: #ff4444;
+            margin-bottom: 30px;
+            font-size: 14px;
         }
         .btn {
             width: 100%;
@@ -59,137 +72,76 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-        }
-        .verify-btn {
             background-color: #00aaff;
             color: #ffffff;
-            margin-bottom: 15px;
         }
-        .verify-btn:hover {
+        .btn:hover {
             background-color: #0088cc;
+            transform: scale(1.02);
         }
-        .logout-btn {
-            background-color: #6c757d;
-            color: #ffffff;
-            margin-top: 10px;
-            font-size: 14px;
-            padding: 10px;
+        .exit-btn {
+            background-color: #dc3545;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            padding: 10px 20px;
+            z-index: 9999;
             display: none;
         }
-        .logout-btn:hover {
-            background-color: #5a6268;
-        }
-        .tip {
-            color: #ff4444;
-            margin-top: 15px;
-            font-size: 14px;
-            height: 40px;
-            line-height: 20px;
+        .exit-btn:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
 <body>
-    <!-- 验证页面（默认显示） -->
     <div class="verify-container">
-        <h1>电影网站专属入口</h1>
-        <input type="text" class="card-input" placeholder="请输入暗号">
-        <button class="btn verify-btn">进入</button>
-        <button class="btn logout-btn">退出登录</button>
-        <div class="tip"></div>
+        <div class="title-suffix">（30天版）</div>
+        <h1 class="main-title">开启观影之旅</h1>
+        <div class="expire-tip">（有效期：即日起30天结束）</div>
+        <button class="btn enter-btn">进入</button>
+    </div>
+
+    <div class="movie-container">
+        <iframe id="movieIframe" src="http://www.0910jzw.com/"></iframe>
+        <button class="btn exit-btn">退出观影</button>
     </div>
 
     <script>
-        // 卡密列表（和版本1保持一致）
-        const DAY_CARDS = ["DAY_001", "DAY_002", "DAY_003"];
-        const MONTH_CARDS = ["MONTH_001", "MONTH_002", "MONTH_003"];
-        // 目标电影网站（跳转版）
-        const TARGET_URL = "https://v.aikanbot.com/";
+        const TARGET_URL = "http://www.0910jzw.com/";
 
-        // 获取DOM元素
-        const [cardInput, verifyBtn, logoutBtn, tip] = [
-            document.querySelector('.card-input'),
-            document.querySelector('.verify-btn'),
-            document.querySelector('.logout-btn'),
-            document.querySelector('.tip')
+        const [verifyContainer, movieContainer, movieIframe, enterBtn, exitBtn] = [
+            document.querySelector('.verify-container'),
+            document.querySelector('.movie-container'),
+            document.getElementById('movieIframe'),
+            document.querySelector('.enter-btn'),
+            document.querySelector('.exit-btn')
         ];
-        const verifyContainer = document.querySelector('.verify-container');
 
-        // 页面加载检查验证状态
-        window.addEventListener('load', () => {
-            const verifyInfo = JSON.parse(localStorage.getItem('movieSiteVerifyInfo'));
-            if (verifyInfo?.isVerified && Date.now() < verifyInfo.expireTime) {
-                const remainingDays = Math.ceil((verifyInfo.expireTime - Date.now())/(1000*60*60*24));
-                const cardType = verifyInfo.durationType === 'day' ? '1天卡' : '30天卡';
-                // 自动跳转（保留提示）
-                openMovieWindow();
-                tip.textContent = `已验证通过（${cardType}，剩余${remainingDays}天），正在跳转...`;
-                tip.style.color = "#28a745";
-            } else if (verifyInfo?.isVerified) {
-                localStorage.removeItem('movieSiteVerifyInfo');
-                tip.textContent = "暗号已过期，请重新输入";
-            }
+        enterBtn.addEventListener('click', () => {
+            verifyContainer.style.display = "none";
+            movieContainer.style.display = "block";
+            movieIframe.src = TARGET_URL;
+            exitBtn.style.display = "block";
         });
 
-        // 验证逻辑（和版本1保持一致）
-        verifyBtn.addEventListener('click', () => {
-            const input = cardInput.value.trim();
-            if (!input) return tip.textContent = "请输入暗号";
-
-            let durationType = '';
-            if (DAY_CARDS.includes(input)) durationType = 'day';
-            else if (MONTH_CARDS.includes(input)) durationType = 'month';
-            else return tip.textContent = "暗号无效，请重新输入";
-
-            // 存储验证状态（和版本1保持一致）
-            localStorage.setItem('movieSiteVerifyInfo', JSON.stringify({
-                isVerified: true,
-                durationType,
-                expireTime: Date.now() + (durationType === 'day' ? 1 : 30) * 24 * 60 * 60 * 1000
-            }));
-
-            // 跳转电影网站
-            openMovieWindow();
-            const cardType = durationType === 'day' ? '1天卡' : '30天卡';
-            tip.textContent = `验证通过（${cardType}），已为你打开观影窗口`;
-            tip.style.color = "#28a745";
+        exitBtn.addEventListener('click', () => {
+            movieContainer.style.display = "none";
+            verifyContainer.style.display = "block";
+            movieIframe.src = "";
         });
 
-        // 核心：打开电影网站新窗口（隐藏地址栏/工具栏，降低复制风险）
-        function openMovieWindow() {
-            // 新窗口参数：隐藏地址栏、工具栏，固定尺寸（普通用户难复制链接）
-            const windowFeatures = 'toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes,width=1200,height=800,top=50,left=100';
-            const movieWindow = window.open(TARGET_URL, '_blank', windowFeatures);
-            
-            // 对新窗口做防复制（尽可能限制）
-            if (movieWindow) {
-                movieWindow.addEventListener('load', () => {
-                    try {
-                        // 禁用新窗口的右键/复制/选中
-                        movieWindow.document.addEventListener('contextmenu', e => e.preventDefault());
-                        movieWindow.document.addEventListener('selectstart', e => e.preventDefault());
-                        movieWindow.document.addEventListener('copy', e => e.preventDefault());
-                        movieWindow.document.addEventListener('cut', e => e.preventDefault());
-                    } catch (err) {
-                        // 跨域时无法操作，不影响核心功能
-                    }
-                });
-            }
-        }
-
-        // 退出登录（和版本1保持一致）
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('movieSiteVerifyInfo');
-            cardInput.disabled = false;
-            logoutBtn.style.display = "none";
-            tip.textContent = "已退出登录，需重新验证";
-            cardInput.value = "";
+        // 防复制
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+        document.addEventListener('copy', e => e.preventDefault());
+        movieIframe.addEventListener('load', () => {
+            try {
+                const iframeDoc = movieIframe.contentDocument || movieIframe.contentWindow.document;
+                iframeDoc.addEventListener('contextmenu', e => e.preventDefault());
+                iframeDoc.addEventListener('selectstart', e => e.preventDefault());
+            } catch (err) {}
         });
-
-        // 防复制（覆盖验证页面，和版本1保持一致）
-        document.addEventListener('contextmenu', e => e.preventDefault()); // 禁用右键
-        document.addEventListener('selectstart', e => e.preventDefault()); // 禁止选中
-        document.addEventListener('copy', e => e.preventDefault()); // 禁止复制
-        document.addEventListener('cut', e => e.preventDefault()); // 禁止剪切
     </script>
 </body>
 </html>
